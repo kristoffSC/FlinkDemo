@@ -67,6 +67,18 @@ under the License.
 			<scope>provided</scope>
 		</dependency>
 
+<!--		<dependency>
+			<groupId>com.github.miwurster</groupId>
+			<artifactId>flink-influxdb</artifactId>
+			<version>1.0</version>
+		</dependency>-->
+
+		<dependency>
+			<groupId>org.influxdb</groupId>
+			<artifactId>influxdb-java</artifactId>
+			<version>2.16</version>
+		</dependency>
+
 		<!-- Add connector dependencies here. They must be in the default scope (compile). -->
 
 		<!-- Example:

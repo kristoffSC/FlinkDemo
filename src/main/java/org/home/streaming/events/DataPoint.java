@@ -1,21 +1,14 @@
 package org.home.streaming.events;
 
-public class DataPoint<T>
+public class DataPoint<T extends Number>
 {
 	private long timestamp;
 	private T value;
-
-	public DataPoint() {}
 
 	public DataPoint(long timestamp, T value)
 	{
 		this.timestamp = timestamp;
 		this.value = value;
-	}
-
-	public DataPoint(long timestamp)
-	{
-		this.timestamp = timestamp;
 	}
 
 	public T getValue()
@@ -33,7 +26,7 @@ public class DataPoint<T>
 		return timestamp;
 	}
 
-	public <K> DataPoint<K> withNewValue(K newValue)
+	public <K extends Number> DataPoint<K> withNewValue(K newValue)
 	{
 		return new DataPoint<K>(this.timestamp, newValue);
 	}

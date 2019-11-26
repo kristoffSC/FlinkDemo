@@ -10,6 +10,6 @@ public class SquareWaveFunction extends RichMapFunction<DataPoint<Double>, DataP
 
 	@Override public DataPoint<Double> map(DataPoint<Double> doubleDataPoint) throws Exception
 	{
-		return null;
+		return new DataPoint<>(doubleDataPoint.getTimestamp(), (double) Math.round(doubleDataPoint.getValue()));
 	}
 }

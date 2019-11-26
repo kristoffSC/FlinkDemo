@@ -53,7 +53,10 @@ public class SensorsStreamingJob
 
 		DataStream<KeyedDataPoint<Double>> sensorStream = generateSensorData(env);
 
-		sensorStream.print();
+
+		sensorStream.addSink(new InfluxDbSink<>("sensors"));
+
+		//sensorStream.print();
 
 		env.execute("Flink Streaming Java API Skeleton");
 	}
@@ -94,7 +97,8 @@ public class SensorsStreamingJob
 				.name("assignKey(door)");
 
 
-		DataStream<KeyedDataPoint<Double>> sensorStream = tempStream
+		DataStream<KeyedDataPoint<Double>> sensorStream =
+				tempStream
 				.union(pressureStream)
 				.union(doorStream);
 

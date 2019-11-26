@@ -1,36 +1,13 @@
 package org.home.streaming.events;
 
-public class KeyedDataPoint<T>
+public class KeyedDataPoint<T extends Number> extends DataPoint<T>
 {
-	private T value;
 	private String key;
-	private long timestamp;
-
-	public KeyedDataPoint()
-	{
-
-	}
 
 	public KeyedDataPoint(T value, String key, long timestamp)
 	{
-		this.value = value;
+		super(timestamp, value);
 		this.key = key;
-		this.timestamp = timestamp;
-	}
-
-	public T getValue()
-	{
-		return value;
-	}
-
-	public void setValue(T value)
-	{
-		this.value = value;
-	}
-
-	public long getTimestamp()
-	{
-		return timestamp;
 	}
 
 	public String getKey()
