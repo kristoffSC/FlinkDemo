@@ -3,12 +3,12 @@ package org.home.streaming.operators;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.home.streaming.events.DataPoint;
 
-public class SineWaveFunction extends RichMapFunction<DataPoint<Double>, DataPoint<Double>>
+public class SineWaveFunction extends RichMapFunction<DataPoint, DataPoint>
 {
 
-	@Override public DataPoint<Double> map(DataPoint<Double> doubleDataPoint) throws Exception
+	@Override public DataPoint map(DataPoint doubleDataPoint) throws Exception
 	{
-		double phase = doubleDataPoint.getValue() * 2 * Math.PI;
-		return doubleDataPoint.withNewValue(Math.sin(phase));
+		double phase = doubleDataPoint.value * 2 * Math.PI;
+		return new DataPoint(doubleDataPoint.timestamp, Math.sin(phase));
 	}
 }

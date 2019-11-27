@@ -19,10 +19,13 @@
 package org.home.streaming;
 
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
+import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.windowing.time.Time;
 import org.home.streaming.events.DataPoint;
 import org.home.streaming.events.KeyedDataPoint;
 import org.home.streaming.operators.AssignKeyFunction;
@@ -43,66 +46,68 @@ import org.home.streaming.sources.TimestampSource;
  * <p>If you change the name of the main class (with the public static void main(String[] args))
  * method, change the respective entry in the POM.xml file (simply search for 'mainClass').
  */
-public class SensorsStreamingJob
-{
+public class SensorsStreamingJob {
 
-	public static void main(String[] args) throws Exception
-	{
-		// set up the streaming execution environment
-		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-		DataStream<KeyedDataPoint<Double>> sensorStream = generateSensorData(env);
+    public static void main(String[] args) throws Exception {
+        // set up the streaming execution environment
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
 
-		sensorStream.addSink(new InfluxDbSink<>("sensors"));
+        DataStream<KeyedDataPoint> sensorStream = generateSensorData(env);
+        sensorStream.addSink(new InfluxDbSink<>("sensors"));
 
-		//sensorStream.print();
+        sensorStream.keyBy((KeySelector<KeyedDataPoint, String>) value -> value.key)
+                .timeWindow(Time.seconds(1))
+                .sum("value")
+                .addSink(new InfluxDbSink<>("summedSensors"));
 
-		env.execute("Flink Streaming Java API Skeleton");
-	}
+        //sensorStream.print();
 
-	private static DataStream<KeyedDataPoint<Double>> generateSensorData(StreamExecutionEnvironment env)
-	{
+        env.execute("Flink Streaming Java API Skeleton");
+    }
 
-		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(1000, 1000));
-		env.setParallelism(1);
-		env.disableOperatorChaining();
+    private static DataStream<KeyedDataPoint> generateSensorData(StreamExecutionEnvironment env) {
 
-		final int SLOWDOWN_FACTOR = 1;
-		final int PERDIOD_MS = 100;
+        env.setRestartStrategy(RestartStrategies.fixedDelayRestart(1000, 1000));
+        env.setParallelism(1);
+        env.disableOperatorChaining();
 
-		// Initial data just timestamped message
-		DataStreamSource<DataPoint<Long>> timestampSource =
-				env.addSource(new TimestampSource(PERDIOD_MS, SLOWDOWN_FACTOR), "test data");
+        final int SLOWDOWN_FACTOR = 1;
+        final int PERDIOD_MS = 100;
 
-		SingleOutputStreamOperator<DataPoint<Double>> sawtoothStream = timestampSource
-				.map(new SawtoothFunction(10))
-				.name("sawTooth");
+        // Initial data just timestamped message
+        DataStreamSource<DataPoint> timestampSource =
+                env.addSource(new TimestampSource(PERDIOD_MS, SLOWDOWN_FACTOR), "test data");
 
-		SingleOutputStreamOperator<KeyedDataPoint<Double>> tempStream = sawtoothStream
-				.map(new AssignKeyFunction("temp"))
-				.name("assignedKey(temp)");
+        SingleOutputStreamOperator<DataPoint> sawtoothStream = timestampSource
+                .map(new SawtoothFunction(10))
+                .name("sawTooth");
 
-		SingleOutputStreamOperator<KeyedDataPoint<Double>> pressureStream = sawtoothStream
-				.map(new SineWaveFunction())
-				.name("sineWave")
-				.map(new AssignKeyFunction("pressure"))
-				.name("assignKey(pressure");
+        SingleOutputStreamOperator<KeyedDataPoint> tempStream = sawtoothStream
+                .map(new AssignKeyFunction("temp"))
+                .name("assignedKey(temp)");
 
-
-		SingleOutputStreamOperator<KeyedDataPoint<Double>> doorStream = sawtoothStream
-				.map(new SquareWaveFunction())
-				.name("square")
-				.map(new AssignKeyFunction("door"))
-				.name("assignKey(door)");
+        SingleOutputStreamOperator<KeyedDataPoint> pressureStream = sawtoothStream
+                .map(new SineWaveFunction())
+                .name("sineWave")
+                .map(new AssignKeyFunction("pressure"))
+                .name("assignKey(pressure");
 
 
-		DataStream<KeyedDataPoint<Double>> sensorStream =
-				tempStream
-				.union(pressureStream)
-				.union(doorStream);
+        SingleOutputStreamOperator<KeyedDataPoint> doorStream = sawtoothStream
+                .map(new SquareWaveFunction())
+                .name("square")
+                .map(new AssignKeyFunction("door"))
+                .name("assignKey(door)");
 
-		return sensorStream;
 
-	}
+        DataStream<KeyedDataPoint> sensorStream =
+                tempStream
+                        .union(pressureStream)
+                        .union(doorStream);
+
+        return sensorStream;
+
+    }
 }

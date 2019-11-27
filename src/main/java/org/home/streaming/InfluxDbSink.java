@@ -11,43 +11,39 @@ import org.influxdb.dto.Query;
 
 import java.util.concurrent.TimeUnit;
 
-public class InfluxDbSink<T extends DataPoint<? extends Number>> extends RichSinkFunction<T>
-{
+public class InfluxDbSink<T extends DataPoint> extends RichSinkFunction<T> {
 
-	private static final String databaseName = "sineWave";
-	private static final String fieldName = "value";
+    private static final String databaseName = "sineWave";
+    private static final String fieldName = "value";
 
-	private final String measurement;
-	private transient InfluxDB influxDb;
+    private final String measurement;
+    private transient InfluxDB influxDb;
 
-	public InfluxDbSink(String measurement)
-	{
-		this.measurement = measurement;
-	}
+    public InfluxDbSink(String measurement) {
+        this.measurement = measurement;
+    }
 
-	@Override
-	public void open(Configuration parameters) throws Exception
-	{
-		super.open(parameters);
+    @Override
+    public void open(Configuration parameters) throws Exception {
+        super.open(parameters);
 
-		influxDb = InfluxDBFactory.connect("http://localhost:8086", "admin", "admin");
-		influxDb.query(new Query("CREATE DATABASE " + databaseName));
-		influxDb.setDatabase(databaseName);
-		influxDb.enableBatch(2000, 100, TimeUnit.MILLISECONDS);
-	}
+        influxDb = InfluxDBFactory.connect("http://localhost:8086", "admin", "admin");
+        influxDb.query(new Query("CREATE DATABASE " + databaseName));
+        influxDb.setDatabase(databaseName);
+        influxDb.enableBatch(2000, 100, TimeUnit.MILLISECONDS);
+    }
 
-	@Override
-	public void invoke(DataPoint dataPoint, Context context) throws Exception
-	{
-		Point.Builder builder = Point.measurement(measurement).time(dataPoint.getTimestamp(), TimeUnit.MILLISECONDS)
-				.addField(fieldName, dataPoint.getValue());
+    @Override
+    public void invoke(DataPoint dataPoint, Context context) throws Exception {
+        Point.Builder builder = Point.measurement(measurement).time(dataPoint.timestamp, TimeUnit.MILLISECONDS)
+                .addField(fieldName, dataPoint.value);
 
-		if (dataPoint instanceof KeyedDataPoint) {
-			builder.tag("key", ((KeyedDataPoint) dataPoint).getKey());
-		}
+        if (dataPoint instanceof KeyedDataPoint) {
+            builder.tag("key", ((KeyedDataPoint) dataPoint).key);
+        }
 
-		Point point = builder.build();
-		influxDb.write(databaseName, "", point);
+        Point point = builder.build();
+        influxDb.write(databaseName, "", point);
 
-	}
+    }
 }
