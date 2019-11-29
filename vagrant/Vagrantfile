@@ -1,0 +1,25 @@
+VAGRANT_API_VERSION  = "2"
+
+Vagrant.configure(VAGRANT_API_VERSION) do |config|
+
+        config.vm.box = "archlinux/archlinux"
+
+        config.vm.provider "virtualbox" do |vb|
+                vb.name = "Flink Demo machine"
+                vb.cpus = 4
+                vb.memory = 8192
+				config.ssh.forward_agent = true
+        config.ssh.forward_x11 = true
+		
+		config.vm.network "forwarded_port", guest: 3000, host: 3000
+		config.vm.network "forwarded_port", guest: 8086, host: 8086
+		config.vm.network "forwarded_port", guest: 9090, host: 9090
+        
+        vb.customize ["modifyvm", :id, "--vram", "128"]
+				vb.customize ["modifyvm", :id, "--clipboard", "bidirectional"]								
+        vb.gui = true
+        end
+		
+       config.vm.provision "shell", path:"init.sh"		
+
+end

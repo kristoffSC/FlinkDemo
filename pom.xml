@@ -67,17 +67,25 @@ under the License.
 			<scope>provided</scope>
 		</dependency>
 
-<!--		<dependency>
-			<groupId>com.github.miwurster</groupId>
-			<artifactId>flink-influxdb</artifactId>
-			<version>1.0</version>
-		</dependency>-->
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-runtime-web_2.12</artifactId>
+			<version>${flink.version}</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.influxdb</groupId>
 			<artifactId>influxdb-java</artifactId>
 			<version>2.16</version>
 		</dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.10.19</version>
+            <scope>test</scope>
+        </dependency>
+
 
 		<!-- Add connector dependencies here. They must be in the default scope (compile). -->
 
@@ -103,6 +111,12 @@ under the License.
 			<artifactId>log4j</artifactId>
 			<version>1.2.17</version>
 			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 

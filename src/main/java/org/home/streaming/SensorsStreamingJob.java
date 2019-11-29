@@ -18,21 +18,32 @@
 
 package org.home.streaming;
 
+import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
+import org.apache.flink.api.common.state.MapStateDescriptor;
+import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
+import org.apache.flink.api.common.typeinfo.TypeHint;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.configuration.ConfigConstants;
+import org.apache.flink.configuration.ConfigOptions;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.TimeCharacteristic;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.datastream.*;
+import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.source.SocketTextStreamFunction;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.util.Collector;
 import org.home.streaming.events.DataPoint;
 import org.home.streaming.events.KeyedDataPoint;
-import org.home.streaming.operators.AssignKeyFunction;
-import org.home.streaming.operators.SawtoothFunction;
-import org.home.streaming.operators.SineWaveFunction;
-import org.home.streaming.operators.SquareWaveFunction;
+import org.home.streaming.events.SocketEvent;
+import org.home.streaming.operators.*;
+import org.home.streaming.sources.SocketEventSource;
 import org.home.streaming.sources.TimestampSource;
+
+import java.net.Socket;
 
 /**
  * Skeleton for a Flink Streaming Job.
@@ -53,17 +64,59 @@ public class SensorsStreamingJob {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-
+        /////////////
         DataStream<KeyedDataPoint> sensorStream = generateSensorData(env);
-        sensorStream.addSink(new InfluxDbSink<>("sensors"));
+        sensorStream
+                .addSink(new InfluxDbSink<>("sensors"))
+                .name("Sensors Sink");
 
-        sensorStream.keyBy((KeySelector<KeyedDataPoint, String>) value -> value.key)
+        KeyedStream<KeyedDataPoint, String> keyedSensorStream = sensorStream
+                .keyBy((KeySelector<KeyedDataPoint, String>) value -> value.key);
+
+        keyedSensorStream
                 .timeWindow(Time.seconds(1))
                 .sum("value")
-                .addSink(new InfluxDbSink<>("summedSensors"));
+                .addSink(new InfluxDbSink<>("summedSensors"))
+                .name("Summed Sensors Sink");
+
+        ///////////////////
+
+        SingleOutputStreamOperator<SocketEvent> socketStream = env.socketTextStream("localhost", 9090)
+                .flatMap(new FlatMapFunction<String, SocketEvent>() {
+                    @Override
+                    public void flatMap(String value, Collector<SocketEvent> out) throws Exception {
+                        String[] tokens = value.split(" ");
+
+                        if (tokens.length == 2) {
+                            SocketEvent record = new SocketEvent(tokens[0], Double.valueOf(tokens[1]));
+                            System.out.println(record);
+                            out.collect(record);
+                        }
+                    }
+                })
+                .name("socketEventStream");
+
+
+        MapStateDescriptor<String, SocketEvent> ruleStateDescriptor = new MapStateDescriptor<>(
+                "RulesBroadcastState",
+                BasicTypeInfo.STRING_TYPE_INFO,
+                TypeInformation.of(new TypeHint<SocketEvent>() {
+                }));
+
+        BroadcastStream<SocketEvent> socketBroadcastStream = socketStream
+                .broadcast(ruleStateDescriptor);
+
+        keyedSensorStream
+                .connect(socketBroadcastStream)
+                .process(new AmplifierFunction())
+                .addSink(new InfluxDbSink<>("amplifiedSensors"))
+                .name("Amplified Sensors Sink");
+
+
+
+        /////////////////
 
         //sensorStream.print();
-
         env.execute("Flink Streaming Java API Skeleton");
     }
 
@@ -74,31 +127,31 @@ public class SensorsStreamingJob {
         env.disableOperatorChaining();
 
         final int SLOWDOWN_FACTOR = 1;
-        final int PERDIOD_MS = 100;
+        final int PERDIOD_MS = 10;
 
         // Initial data just timestamped message
         DataStreamSource<DataPoint> timestampSource =
                 env.addSource(new TimestampSource(PERDIOD_MS, SLOWDOWN_FACTOR), "test data");
 
         SingleOutputStreamOperator<DataPoint> sawtoothStream = timestampSource
-                .map(new SawtoothFunction(10))
+                .map(new SawtoothFunction(100))
                 .name("sawTooth");
 
         SingleOutputStreamOperator<KeyedDataPoint> tempStream = sawtoothStream
-                .map(new AssignKeyFunction("temp"))
+                .map(new AssignKeyToDataPointFunction("temp"))
                 .name("assignedKey(temp)");
 
         SingleOutputStreamOperator<KeyedDataPoint> pressureStream = sawtoothStream
                 .map(new SineWaveFunction())
                 .name("sineWave")
-                .map(new AssignKeyFunction("pressure"))
+                .map(new AssignKeyToDataPointFunction("pressure"))
                 .name("assignKey(pressure");
 
 
         SingleOutputStreamOperator<KeyedDataPoint> doorStream = sawtoothStream
                 .map(new SquareWaveFunction())
                 .name("square")
-                .map(new AssignKeyFunction("door"))
+                .map(new AssignKeyToDataPointFunction("door"))
                 .name("assignKey(door)");
 
 

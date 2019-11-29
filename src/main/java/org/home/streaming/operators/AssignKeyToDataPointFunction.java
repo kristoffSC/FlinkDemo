@@ -4,10 +4,10 @@ import org.apache.flink.api.common.functions.RichMapFunction;
 import org.home.streaming.events.DataPoint;
 import org.home.streaming.events.KeyedDataPoint;
 
-public class AssignKeyFunction extends RichMapFunction<DataPoint, KeyedDataPoint> {
+public class AssignKeyToDataPointFunction extends RichMapFunction<DataPoint, KeyedDataPoint> {
     private final String assignedKey;
 
-    public AssignKeyFunction(String assignedKey) {
+    public AssignKeyToDataPointFunction(String assignedKey) {
 
         this.assignedKey = assignedKey;
     }

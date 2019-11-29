@@ -12,4 +12,12 @@ public class DataPoint
 		this.timestamp = timestamp;
 		this.value = value;
 	}
+
+	@Override
+	public String toString() {
+		return "DataPoint{" +
+				"timestamp=" + timestamp +
+				", value=" + value +
+				'}';
+	}
 }
