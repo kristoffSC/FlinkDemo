@@ -19,31 +19,22 @@
 package org.home.streaming;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.configuration.ConfigConstants;
-import org.apache.flink.configuration.ConfigOptions;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.*;
-import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.source.SocketTextStreamFunction;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 import org.home.streaming.events.DataPoint;
 import org.home.streaming.events.KeyedDataPoint;
 import org.home.streaming.events.SocketEvent;
 import org.home.streaming.operators.*;
-import org.home.streaming.sources.SocketEventSource;
 import org.home.streaming.sources.TimestampSource;
-
-import java.net.Socket;
 
 /**
  * Skeleton for a Flink Streaming Job.
@@ -111,7 +102,6 @@ public class SensorsStreamingJob {
                 .process(new AmplifierFunction())
                 .addSink(new InfluxDbSink<>("amplifiedSensors"))
                 .name("Amplified Sensors Sink");
-
 
 
         /////////////////

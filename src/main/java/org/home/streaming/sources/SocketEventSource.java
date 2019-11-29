@@ -1,7 +1,6 @@
 package org.home.streaming.sources;
 
 import org.apache.flink.streaming.api.functions.source.SocketTextStreamFunction;
-import scala.concurrent.java8.FuturesConvertersImpl;
 
 public class SocketEventSource extends SocketTextStreamFunction {
 
@@ -17,9 +16,7 @@ public class SocketEventSource extends SocketTextStreamFunction {
     public void run(SourceContext<String> ctx) throws Exception {
         try {
             super.run(ctx);
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             System.out.println("Caught Exception");
             e.printStackTrace();
         }
