@@ -107,7 +107,7 @@ public class SensorsStreamingJob {
         /////////////////
 
         //sensorStream.print();
-        env.execute("Flink Streaming Java API Skeleton");
+        env.execute("Flink Demo");
     }
 
     private static DataStream<KeyedDataPoint> generateSensorData(StreamExecutionEnvironment env) {
