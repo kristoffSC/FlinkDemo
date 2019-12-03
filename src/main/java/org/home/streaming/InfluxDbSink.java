@@ -28,6 +28,7 @@ public class InfluxDbSink<T extends DataPoint> extends RichSinkFunction<T> {
         super.open(parameters);
 
         influxDb = InfluxDBFactory.connect("http://localhost:8086", "admin", "admin");
+        //influxDb = InfluxDBFactory.connect("http://10.0.2.15:8086", "admin", "admin");
         influxDb.query(new Query("CREATE DATABASE " + databaseName));
         influxDb.setDatabase(databaseName);
         influxDb.enableBatch(2000, 100, TimeUnit.MILLISECONDS);

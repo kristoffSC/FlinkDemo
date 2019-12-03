@@ -6,6 +6,14 @@ echo -n "##### Updating the package list #####"
 echo -n "##### Installing netcat #####"
 ( echo "y"; echo "y" ) | sudo pacman -S openbsd-netcat
 
+echo -n "##### Installing Docker and Docker-Compose #####"
+( echo "y"; echo "y" ) |sudo pacman -S docker
+( echo "y"; echo "y" ) |sudo pacman -S docker-compose
+
+sudo systemctl enable docker
+sudo systemctl start docker
+sudo usermod -aG docker vagrant
+
 echo -n "##### Installing InfluxDb #####"
 ( echo "y"; echo "y" ) | sudo pacman -S influxdb
 sudo systemctl enable influxdb

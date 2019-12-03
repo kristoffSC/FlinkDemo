@@ -54,12 +54,16 @@ public class SensorsStreamingJob {
         // set up the streaming execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+        env.enableCheckpointing(3000);
 
-        /////////////
+        // Original Event Stream
         DataStream<KeyedDataPoint> sensorStream = generateSensorData(env);
+        //sensorStream.print();
+
         sensorStream
                 .addSink(new InfluxDbSink<>("sensors"))
                 .name("Sensors Sink");
+
 
         KeyedStream<KeyedDataPoint, String> keyedSensorStream = sensorStream
                 .keyBy((KeySelector<KeyedDataPoint, String>) value -> value.key);
@@ -70,8 +74,8 @@ public class SensorsStreamingJob {
                 .addSink(new InfluxDbSink<>("summedSensors"))
                 .name("Summed Sensors Sink");
 
-        ///////////////////
 
+        //SingleOutputStreamOperator<SocketEvent> socketStream = env.socketTextStream("10.0.2.15", 9090)
         SingleOutputStreamOperator<SocketEvent> socketStream = env.socketTextStream("localhost", 9090)
                 .flatMap(new FlatMapFunction<String, SocketEvent>() {
                     @Override
@@ -103,10 +107,6 @@ public class SensorsStreamingJob {
                 .addSink(new InfluxDbSink<>("amplifiedSensors"))
                 .name("Amplified Sensors Sink");
 
-
-        /////////////////
-
-        //sensorStream.print();
         env.execute("Flink Demo");
     }
 
@@ -143,7 +143,6 @@ public class SensorsStreamingJob {
                 .name("square")
                 .map(new AssignKeyToDataPointFunction("door"))
                 .name("assignKey(door)");
-
 
         DataStream<KeyedDataPoint> sensorStream =
                 tempStream
